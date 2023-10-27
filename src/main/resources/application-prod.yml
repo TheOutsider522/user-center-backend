@@ -1,0 +1,11 @@
+spring:
+  # DataSource Config
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: firstUserProject
+    password: @sxl199388SXL
+    # ?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://bj-cdb-ha5dhabo.sql.tencentcdb.com:63720/user-center
+  session:
+    # session失效时间
+    timeout: 86400
