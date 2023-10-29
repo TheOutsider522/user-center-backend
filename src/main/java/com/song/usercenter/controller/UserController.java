@@ -1,6 +1,5 @@
 package com.song.usercenter.controller;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.song.usercenter.common.BaseResponse;
 import com.song.usercenter.common.ErrorCode;
 import com.song.usercenter.common.ResultUtils;
@@ -55,6 +54,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
+    @CrossOrigin
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if(userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
