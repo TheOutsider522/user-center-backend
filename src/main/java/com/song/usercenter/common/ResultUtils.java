@@ -6,7 +6,7 @@ package com.song.usercenter.common;
  */
 public class ResultUtils {
     /**
-     * 成功
+     * 请求成功
      * @param data
      * @param <T>
      * @return
@@ -16,7 +16,7 @@ public class ResultUtils {
     }
 
     /**
-     * 失败
+     * 请求失败
      * @param errorCode
      * @return
      */
@@ -25,7 +25,8 @@ public class ResultUtils {
     }
 
     /**
-     * 失败
+     * 请求失败
+     * 自定义状态码、状态码信息以及状态码详细描述
      * @param code
      * @param message
      * @param description
@@ -36,7 +37,8 @@ public class ResultUtils {
     }
 
     /**
-     * 自定义消息和描述
+     * 请求失败
+     * 返回错误码，自定义状态码信息与状态码描述
      * @param errorCode
      * @param description
      * @return
@@ -46,7 +48,8 @@ public class ResultUtils {
     }
 
     /**
-     * 自定义描述
+     * 请求失败
+     * 使用错误码，自定义描述信息
      * @param errorCode
      * @param description
      * @return

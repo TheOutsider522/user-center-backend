@@ -112,19 +112,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1.校验
         if (StringUtils.isAllBlank(userAccount, userPassword)){
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码不能为空");
         }
         if(userAccount.length() < UserConstant.USER_ACCOUNT_MIN_LENGTH) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户不能小于4位");
         }
         if(userPassword.length() < UserConstant.PASSWORD_MIN_LENGTH) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能小于8位");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？ ]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()){
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户不能包含特殊字符");
         }
 
         // 2.加密
@@ -139,7 +139,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if(user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            return null;
+            throw new BusinessException(ErrorCode.NULL_ERROR, "该账户不存在");
         }
 
         // 3.用户脱敏
@@ -187,7 +187,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getSafetyUser(User originUser){
         if (originUser == null){
-            return null;
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "请登陆后操作");
         }
         User safetyUser = new User();
         safetyUser.setId(originUser.getId());

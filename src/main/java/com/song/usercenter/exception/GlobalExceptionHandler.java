@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
-
     /**
      * 此方法仅捕获BusinessException异常
      * @return
@@ -31,5 +30,4 @@ public class GlobalExceptionHandler {
         log.error("runtimeException", e);
         return ResultUtils.error(ErrorCode.SYSTEM_ERROR, e.getMessage(), "");
     }
-
 }
