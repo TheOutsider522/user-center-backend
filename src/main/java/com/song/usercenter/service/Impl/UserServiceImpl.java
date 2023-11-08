@@ -2,6 +2,8 @@ package com.song.usercenter.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import com.song.usercenter.common.ErrorCode;
 import com.song.usercenter.constant.UserConstant;
 import com.song.usercenter.exception.BusinessException;
@@ -11,10 +13,15 @@ import com.song.usercenter.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -28,6 +35,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService{
+
+    @Resource
+    private UserMapper userMapper;
 
     /**
      * 盐值 混淆密码
@@ -165,7 +175,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if(user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "用户未登录");
         }
-        if(user.getUserRole() != UserConstant.ADMIN_ROLE) {
+        if(!isAdmin(user)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "不是管理员");
         }
         // 搜索
@@ -201,6 +211,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setCreateTime(originUser.getCreateTime());
         safetyUser.setUserRole(originUser.getUserRole());
         safetyUser.setRegisterCode(originUser.getRegisterCode());
+        safetyUser.setTags(originUser.getTags());
         return safetyUser;
     }
 
@@ -215,4 +226,129 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATUS);
         return 1;
     }
+
+    /**
+     * 根据标签查询用户(内存过滤)
+     * @param tagNameList
+     * @return
+     */
+    @Override
+    public List<User> searchUserByTags(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "标签为空");
+        }
+
+        // 查询所有用户
+        QueryWrapper<User> queryWrapperOfMemory = new QueryWrapper<>();
+        List<User> userList = list(queryWrapperOfMemory);
+        Gson gson = new Gson();
+        // 在内存中判断是否包含要求的标签
+        return userList.stream()
+                .filter(user -> {
+                    String tagStr = user.getTags();
+                    //获取该用户的所有标签
+                    Set<String> tempTagNameList = gson.fromJson(tagStr, new TypeToken<Set<String>>() {}.getType());
+                    // 判空
+                    tempTagNameList = Optional.ofNullable(tempTagNameList).orElse(new HashSet<>());
+                    //匹配传入的标签
+                    for (String tagName : tagNameList) {
+                        if (!tempTagNameList.contains(tagName)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }).map(user -> getSafetyUser(user))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 更新用户信息
+     * @param user
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public Integer updateUser(User user, User loginUser) {
+        // 参数校验
+        Long userId = user.getId();
+        if (userId <=0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // todo 如果用户没有任何要更新的值, 直接报错
+
+        // 权限校验 若不是管理员且修改的不是自己的信息，则抛出异常
+        if (!isAdmin(loginUser) || !userId.equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+
+        // 若数据库中没有该用户，抛出异常
+        User oldUser = getById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+
+        return userMapper.updateById(user);
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if(request == null) {
+            return null;
+        }
+        User loginUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "请先登录");
+        }
+        return loginUser;
+    }
+
+    /**
+     * 校验用户是否管理员
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isAdmin(HttpServletRequest request){
+        Object userObject = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
+        User user = (User) userObject;
+        if(user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 校验用户是否管理员
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public boolean isAdmin(User loginUser){
+        if(loginUser == null || loginUser.getUserRole() != UserConstant.ADMIN_ROLE) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 根据标签查询用户(SQL版)
+     * @param tagNameList
+     * @return
+     */
+    @Deprecated
+    private List<User> searchUserByTagsBySQL(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "标签为空");
+        }
+
+        // 拼接 and 查询
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        for (String tagName : tagNameList) {
+            queryWrapper = queryWrapper.like("tags", tagName);
+        }
+        List<User> userList = list(queryWrapper);
+        return userList;
+    }
+
 }

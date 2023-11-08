@@ -9,7 +9,9 @@ import com.song.usercenter.model.domain.User;
 import com.song.usercenter.model.request.UserLoginRequest;
 import com.song.usercenter.model.request.UserRegisterRequest;
 import com.song.usercenter.service.UserService;
+import io.swagger.annotations.Api;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -18,29 +20,33 @@ import java.util.List;
 
 /**
  * 用户接口
+ *
  * @author TheOutsider
  */
 @RestController
 @RequestMapping("/user")
+@Api("用户信息管理")
+@CrossOrigin
 public class UserController {
     @Resource
     private UserService userService;
 
     /**
      * 用户注册接口
+     *
      * @param userRegisterRequest
      * @return
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
-        if(userRegisterRequest == null) {
+        if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
         String registerCode = userRegisterRequest.getRegisterCode();
-        if(StringUtils.isAllBlank(userAccount, userPassword, checkPassword, registerCode)) {
+        if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, registerCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         long result = userService.userRegister(userAccount, userPassword, checkPassword, registerCode);
@@ -49,18 +55,19 @@ public class UserController {
 
     /**
      * 用户登录接口
+     *
      * @param userLoginRequest
      * @param request
      * @return
      */
     @PostMapping("/login")
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
-        if(userLoginRequest == null) {
+        if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
-        if(StringUtils.isAllBlank(userAccount, userPassword)) {
+        if (StringUtils.isAllBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = userService.userLogin(userAccount, userPassword, request);
@@ -69,12 +76,13 @@ public class UserController {
 
     /**
      * 用户注销接口
+     *
      * @param request
      * @return
      */
     @PostMapping("/logout")
     public BaseResponse<Integer> userLogout(HttpServletRequest request) {
-        if(request == null) {
+        if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         int result = userService.userLogout(request);
@@ -83,11 +91,12 @@ public class UserController {
 
     /**
      * 获取当前已登录的用户
+     *
      * @param request
      * @return
      */
     @GetMapping("/current")
-    public BaseResponse<User> getCurrentUser(HttpServletRequest request){
+    public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         User currentUser = (User) userObj;
         if (currentUser == null) {
@@ -102,6 +111,7 @@ public class UserController {
 
     /**
      * 搜索用户: 若username为空, 则返回所有用户
+     *
      * @param username
      * @param request
      * @return
@@ -114,6 +124,7 @@ public class UserController {
 
     /**
      * 删除用户接口
+     *
      * @param id
      * @param request
      * @return
@@ -121,7 +132,7 @@ public class UserController {
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
         // 鉴权
-        if(!isAdmin(request)){
+        if (!userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id < 0) {
@@ -132,16 +143,28 @@ public class UserController {
     }
 
     /**
-     * 是否为管理员
-     * @param request
+     * 根据标签搜索用户
+     *
+     * @param tagNameList
      * @return
      */
-    private boolean isAdmin(HttpServletRequest request){
-        Object userObject = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
-        User user = (User) userObject;
-        if(user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
-            return false;
+    @GetMapping("/search/tags")
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "传入的标签为空");
         }
-        return true;
+        List<User> userList = userService.searchUserByTags(tagNameList);
+        return ResultUtils.success(userList);
     }
+
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest request) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        int result = userService.updateUser(user, loginUser);
+        return ResultUtils.success(result);
+    }
+
 }
