@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.song.usercenter.common.ErrorCode;
+import com.song.usercenter.common.ResultUtils;
 import com.song.usercenter.constant.UserConstant;
 import com.song.usercenter.exception.BusinessException;
 import com.song.usercenter.model.domain.User;
@@ -294,7 +295,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getLoginUser(HttpServletRequest request) {
         if(request == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         if (loginUser == null) {
