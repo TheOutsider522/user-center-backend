@@ -26,7 +26,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/user")
 @Api("用户信息管理")
-@CrossOrigin
 public class UserController {
     @Resource
     private UserService userService;
