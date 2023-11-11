@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author TheOutsider
  */
-@Configuration
-@EnableSpringHttpSession
+// @Configuration
+// @EnableSpringHttpSession
 public class SessionConfig {
     @Bean
     public SessionRepository sessionRepository() {
