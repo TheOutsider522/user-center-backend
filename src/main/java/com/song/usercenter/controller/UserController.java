@@ -39,9 +39,11 @@ public class UserController {
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+        // 判断参数是否为空
         if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 取出注册需要的参数并判空
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
@@ -49,6 +51,7 @@ public class UserController {
         if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, registerCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 进行数据库插入
         long result = userService.userRegister(userAccount, userPassword, checkPassword, registerCode);
         return ResultUtils.success(result);
     }
@@ -62,6 +65,7 @@ public class UserController {
      */
     @PostMapping("/login")
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        // 参数判空
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -70,6 +74,8 @@ public class UserController {
         if (StringUtils.isAllBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
+        // 数据库插入
         User user = userService.userLogin(userAccount, userPassword, request);
         return ResultUtils.success(user);
     }
