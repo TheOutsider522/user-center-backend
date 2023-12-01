@@ -172,4 +172,13 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @GetMapping("/recommend")
+    public BaseResponse<List<User>> recommendUsers(HttpServletRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        return ResultUtils.success(userService.recommendUsers(request));
+    }
+
 }

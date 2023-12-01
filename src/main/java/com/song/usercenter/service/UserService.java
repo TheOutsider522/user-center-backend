@@ -1,5 +1,6 @@
 package com.song.usercenter.service;
 
+import com.song.usercenter.common.BaseResponse;
 import com.song.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -89,4 +90,18 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 推荐用户
+     * @param request
+     * @return
+     */
+    List<User> recommendUsers(HttpServletRequest request);
+
+    /**
+     * 检测用户是否已登陆
+     * @param request
+     * @return
+     */
+    boolean isLogin(HttpServletRequest request);
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.song.usercenter.common.BaseResponse;
 import com.song.usercenter.common.ErrorCode;
 import com.song.usercenter.common.ResultUtils;
 import com.song.usercenter.constant.UserConstant;
@@ -29,13 +30,14 @@ import java.util.stream.Collectors;
 
 /**
  * 用户服务实现类
+ *
  * @author TheOutsider
  */
 
 @Service
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
-    implements UserService{
+        implements UserService {
 
     @Resource
     private UserMapper userMapper;
@@ -47,32 +49,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 用户注册
-     * @param userAccount 用户账户
-     * @param userPassword 用户密码
+     *
+     * @param userAccount   用户账户
+     * @param userPassword  用户密码
      * @param checkPassword 校验密码
-     * @param registerCode 注册编号
+     * @param registerCode  注册编号
      * @return
      */
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword, String registerCode) {
         // 1.校验
-        if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, registerCode)){
+        if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, registerCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
-        if(userAccount.length() < UserConstant.USER_ACCOUNT_MIN_LENGTH) {
+        if (userAccount.length() < UserConstant.USER_ACCOUNT_MIN_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
-        if(userPassword.length() < UserConstant.PASSWORD_MIN_LENGTH || checkPassword.length() < UserConstant.PASSWORD_MIN_LENGTH) {
+        if (userPassword.length() < UserConstant.PASSWORD_MIN_LENGTH || checkPassword.length() < UserConstant.PASSWORD_MIN_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
-        if(registerCode.length() > UserConstant.REGISTER_CODE_MAX_LENGTH) {
+        if (registerCode.length() > UserConstant.REGISTER_CODE_MAX_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册编号过长");
         }
 
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？ ]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
-        if (matcher.find()){
+        if (matcher.find()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户中包含特殊字符");
         }
 
@@ -93,7 +96,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         QueryWrapper<User> registerCodeWrapper = new QueryWrapper<>();
         registerCodeWrapper.eq("registerCode", registerCode);
         long registerCodeCount = count(registerCodeWrapper);
-        if(registerCodeCount > 0) {
+        if (registerCodeCount > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册编号已存在");
         }
 
@@ -114,6 +117,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 用户登录
+     *
      * @param userAccount
      * @param userPassword
      * @param request
@@ -122,19 +126,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1.校验
-        if (StringUtils.isAllBlank(userAccount, userPassword)){
+        if (StringUtils.isAllBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码不能为空");
         }
-        if(userAccount.length() < UserConstant.USER_ACCOUNT_MIN_LENGTH) {
+        if (userAccount.length() < UserConstant.USER_ACCOUNT_MIN_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户不能小于4位");
         }
-        if(userPassword.length() < UserConstant.PASSWORD_MIN_LENGTH) {
+        if (userPassword.length() < UserConstant.PASSWORD_MIN_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能小于8位");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？ ]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
-        if (matcher.find()){
+        if (matcher.find()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户不能包含特殊字符");
         }
 
@@ -148,7 +152,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = getOne(queryWrapper);
 
         // 用户不存在
-        if(user == null) {
+        if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.NULL_ERROR, "该账户不存在");
         }
@@ -164,6 +168,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 搜索用户
+     *
      * @param username
      * @param request
      * @return
@@ -173,15 +178,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 鉴权
         Object userObject = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         User user = (User) userObject;
-        if(user == null) {
+        if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "用户未登录");
         }
-        if(!isAdmin(user)) {
+        if (!isAdmin(user)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "不是管理员");
         }
         // 搜索
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        if(StringUtils.isNoneBlank(username)) {
+        if (StringUtils.isNoneBlank(username)) {
             queryWrapper.like("username", username);
         }
         List<User> userList = list(queryWrapper);
@@ -192,12 +197,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 用户脱敏
+     *
      * @param originUser
      * @return
      */
     @Override
-    public User getSafetyUser(User originUser){
-        if (originUser == null){
+    public User getSafetyUser(User originUser) {
+        if (originUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "请登陆后操作");
         }
         User safetyUser = new User();
@@ -218,6 +224,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 用户注销
+     *
      * @param request
      * @return
      */
@@ -230,6 +237,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 根据标签查询用户(内存过滤)
+     *
      * @param tagNameList
      * @return
      */
@@ -247,11 +255,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userList.stream()
                 .filter(user -> {
                     String tagStr = user.getTags();
-                    //获取该用户的所有标签
-                    Set<String> tempTagNameList = gson.fromJson(tagStr, new TypeToken<Set<String>>() {}.getType());
+                    // 获取该用户的所有标签
+                    Set<String> tempTagNameList = gson.fromJson(tagStr, new TypeToken<Set<String>>() {
+                    }.getType());
                     // 判空
                     tempTagNameList = Optional.ofNullable(tempTagNameList).orElse(new HashSet<>());
-                    //匹配传入的标签
+                    // 匹配传入的标签
                     for (String tagName : tagNameList) {
                         if (!tempTagNameList.contains(tagName)) {
                             return false;
@@ -264,6 +273,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 更新用户信息
+     *
      * @param user
      * @param loginUser
      * @return
@@ -272,7 +282,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public Integer updateUser(User user, User loginUser) {
         // 参数校验
         Long userId = user.getId();
-        if (userId <=0) {
+        if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
@@ -294,7 +304,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        if(request == null) {
+        if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
@@ -306,14 +316,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 校验用户是否管理员
+     *
      * @param request
      * @return
      */
     @Override
-    public boolean isAdmin(HttpServletRequest request){
+    public boolean isAdmin(HttpServletRequest request) {
         Object userObject = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         User user = (User) userObject;
-        if(user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
+        if (user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
             return false;
         }
         return true;
@@ -321,12 +332,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 校验用户是否管理员
+     *
      * @param loginUser
      * @return
      */
     @Override
-    public boolean isAdmin(User loginUser){
-        if(loginUser == null || loginUser.getUserRole() != UserConstant.ADMIN_ROLE) {
+    public boolean isAdmin(User loginUser) {
+        if (loginUser == null || loginUser.getUserRole() != UserConstant.ADMIN_ROLE) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 推荐用户
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public List<User> recommendUsers(HttpServletRequest request) {
+        if (request == null || !isLogin(request)) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+
+        // 查询所有信息
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        List<User> userList = list(queryWrapper);
+        // 返回脱敏信息
+        return userList.stream()
+                .map(user -> getSafetyUser(user))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 检查用户是否已登陆
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isLogin(HttpServletRequest request) {
+        User loginUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
+        if (loginUser == null) {
             return false;
         }
         return true;
@@ -334,6 +382,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 根据标签查询用户(SQL版)
+     *
      * @param tagNameList
      * @return
      */
